@@ -1,0 +1,7 @@
+%no-protection
+Key-Type: RSA
+Key-Length: 2048
+Name-Real: Proton Bridge
+Name-Email: bridge@localhost
+Expire-Date: 0
+%commit

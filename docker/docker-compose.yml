@@ -1,0 +1,52 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: protonmail-bridge-tailscale
+    hostname: proton-bridge
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?set TS_AUTHKEY in docker/.env}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "false"
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+
+  protonmail-bridge:
+    build: .
+    image: ${PROTON_BRIDGE_IMAGE:-protonmail-bridge:local}
+    container_name: protonmail-bridge
+    restart: unless-stopped
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+    volumes:
+      # Persist Bridge state, GPG keyring, pass store, and mailbox cache.
+      # Without these, every container recreation triggers a full re-sync.
+      - ./data/root:/root
+      - ./data/protonmail:/protonmail/data
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 2143 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
+
+  protonmail-bridge-login:
+    profiles:
+      - setup
+    build: .
+    image: ${PROTON_BRIDGE_IMAGE:-protonmail-bridge:local}
+    container_name: protonmail-bridge-login
+    restart: "no"
+    depends_on:
+      - tailscale
+    network_mode: service:tailscale
+    command: web-init
+    volumes:
+      - ./data/root:/root
+      - ./data/protonmail:/protonmail/data
