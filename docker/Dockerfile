@@ -25,11 +25,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM debian:trixie-slim
 
-ARG TTYD_VERSION=1.7.7
-
 EXPOSE 2025/tcp
 EXPOSE 2143/tcp
-EXPOSE 7681/tcp
 
 # Install necessary system tools
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -57,11 +54,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libnss3 \
     pass \
     gnupg
-
-RUN curl -fsSL \
-    "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64" \
-    -o /usr/local/bin/ttyd \
-    && chmod 0755 /usr/local/bin/ttyd
 
 # Copy entrypoint script and ProtonMail Bridge binaries
 COPY gpgparams entrypoint.sh /protonmail/

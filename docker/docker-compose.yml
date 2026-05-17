@@ -35,18 +35,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 300s
-
-  protonmail-bridge-login:
-    profiles:
-      - setup
-    build: .
-    image: ${PROTON_BRIDGE_IMAGE:-protonmail-bridge:local}
-    container_name: protonmail-bridge-login
-    restart: "no"
-    depends_on:
-      - tailscale
-    network_mode: service:tailscale
-    command: web-init
-    volumes:
-      - ./data/root:/root
-      - ./data/protonmail:/protonmail/data

@@ -14,7 +14,6 @@ docker compose up -d
 echo "Configuring Tailscale TCP forwarders..."
 for i in $(seq 1 60); do
     if docker exec protonmail-bridge-tailscale tailscale status >/dev/null 2>&1; then
-        docker exec protonmail-bridge-tailscale tailscale serve --yes --http=7681 off >/dev/null 2>&1 || true
         docker exec protonmail-bridge-tailscale tailscale serve --yes --bg --tcp=1143 tcp://127.0.0.1:2143
         docker exec protonmail-bridge-tailscale tailscale serve --yes --bg --tcp=1025 tcp://127.0.0.1:2025
         exit 0

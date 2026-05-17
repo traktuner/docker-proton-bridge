@@ -11,31 +11,23 @@ stop_existing_instance() {
     fi
 }
 
-# First-run setup: GPG key + pass init, then drop into the interactive CLI
-# so the user can `login` to Proton. Run with:
-#   docker compose run --rm protonmail-bridge init
-initialize() {
-    echo "Initializing ProtonMail Bridge (first-run setup)..."
+ensure_secret_store() {
     if [ ! -f /root/.gnupg/pubring.kbx ]; then
         gpg --generate-key --batch /protonmail/gpgparams
     fi
     if [ ! -d /root/.password-store ]; then
         pass init bridge@localhost  # key name should match that in gpgparams file
     fi
-    stop_existing_instance
-    exec /protonmail/proton-bridge --cli
 }
 
-web_initialize() {
-    echo "Starting browser-based ProtonMail Bridge setup..."
-    if [ ! -f /root/.gnupg/pubring.kbx ]; then
-        gpg --generate-key --batch /protonmail/gpgparams
-    fi
-    if [ ! -d /root/.password-store ]; then
-        pass init bridge@localhost
-    fi
+# First-run setup: GPG key + pass init, then drop into the interactive CLI
+# so the user can `login` to Proton. Run with:
+#   docker compose run --rm protonmail-bridge init
+initialize() {
+    echo "Initializing ProtonMail Bridge (first-run setup)..."
+    ensure_secret_store
     stop_existing_instance
-    exec ttyd -W -p 7681 -i 0.0.0.0 /protonmail/proton-bridge --cli
+    exec /protonmail/proton-bridge --cli
 }
 
 # Normal run: start Bridge headless.
@@ -43,6 +35,7 @@ web_initialize() {
 # forwarder ports that Tailscale Serve can publish inside the tailnet.
 start_bridge() {
     echo "Starting ProtonMail Bridge..."
+    ensure_secret_store
     stop_existing_instance
         
     socat TCP-LISTEN:2143,fork,reuseaddr TCP:127.0.0.1:1143 &
@@ -64,9 +57,6 @@ trap 'stop_existing_instance; exit 0' SIGTERM SIGINT
 case "$1" in
     init)
         initialize
-        ;;
-    web-init)
-        web_initialize
         ;;
     *)
         start_bridge
