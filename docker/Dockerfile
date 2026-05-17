@@ -44,6 +44,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     dnsutils \
     socat \
     libsecret-1-0 \
+    libfido2-1 \
+    libcbor0.10 \
+    libudev1 \
     ca-certificates \
     libglib2.0-0t64 \
     libgtk-3-0t64 \
@@ -64,5 +67,8 @@ RUN curl -fsSL \
 COPY gpgparams entrypoint.sh /protonmail/
 COPY --from=build /build/proton-bridge/bridge /protonmail/
 COPY --from=build /build/proton-bridge/proton-bridge /protonmail/
+
+RUN ldd /protonmail/bridge /protonmail/proton-bridge \
+    | awk '/not found/ { missing=1; print } END { exit missing }'
 
 ENTRYPOINT ["bash", "/protonmail/entrypoint.sh"]

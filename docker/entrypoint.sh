@@ -35,7 +35,7 @@ web_initialize() {
         pass init bridge@localhost
     fi
     stop_existing_instance
-    exec ttyd -W -p 7681 -i 127.0.0.1 /protonmail/proton-bridge --cli
+    exec ttyd -W -p 7681 -i 0.0.0.0 /protonmail/proton-bridge --cli
 }
 
 # Normal run: start Bridge headless.
