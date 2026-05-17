@@ -1,20 +1,27 @@
+# syntax=docker/dockerfile:1.7
+
 FROM golang:1.26.3-trixie AS build
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     git \
     build-essential \
     libsecret-1-dev \
     libfido2-dev \
     libcbor-dev \
     pkg-config \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates
 
 # Build ProtonMail Bridge
 WORKDIR /build/
-COPY build.sh VERSION /build/
-RUN bash build.sh
+COPY VERSION /build/
+RUN git clone --branch "v$(cat VERSION)" --depth 1 https://github.com/ProtonMail/proton-bridge.git
+WORKDIR /build/proton-bridge
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    make build-nogui
 
 FROM debian:trixie-slim
 
@@ -25,7 +32,9 @@ EXPOSE 2143/tcp
 EXPOSE 7681/tcp
 
 # Install necessary system tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     procps \
     iproute2 \
@@ -44,8 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     libnss3 \
     pass \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
+    gnupg
 
 RUN curl -fsSL \
     "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.x86_64" \
